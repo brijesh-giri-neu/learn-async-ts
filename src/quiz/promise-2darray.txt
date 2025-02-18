@@ -2,3 +2,80 @@
 - Is there a difference in the flow of execution from when the code was in the setTimeout function?
 - Is the flow of execution in both these examples different from the flow of execution with the examples using the fetch() API, which also returns a promise? 
 - If yes, explain the code execution difference. Add your explanation to this file.
+
+Q1. Yes, there is a difference in the flow of execution whem the code is extracted out from the setTimeout function.
+
+The setTimeout function causes the code inside it to be scheduled in the Timer phase of the Event Loop (MacroTask Queue), while returning a pending promise to the caller. 
+    This mimics asynchronous execution, as the computation of the sum happens after the flow of execution has been returned to the caller of sum2DArray().
+
+On the other hand, removing setTimeout causes the code inside the promise constructor to be executed synchronously, i.e. the promise object returned from sum2DArray() will always be in either resolved or rejected state.
+    The same can be observed in the execution logs, the logged promise object is always in final state when code inside setTimeout is extracted out.
+
+We can see both the execution flows below,
+
+With setTimeout
+-------------------------------------------------------------------------------
+Sum called ... 
+returning from sum
+sumPromise1: Promise { <pending> }
+Sum called ... 
+returning from sum
+sumPromise2: Promise { <rejected> 'Cannot sum an empty array' }
+Cannot sum an empty array
+Adding 1 to sum
+Adding 2 to sum
+Adding 3 to sum
+Adding 4 to sum
+Adding 5 to sum
+Adding 6 to sum
+Adding 7 to sum
+Adding 8 to sum
+Adding 9 to sum
+45
+
+Note, how the returned sumPromise1 is in pending state due to asynchronous execution
+
+After Extracting out code from setTimeout
+--------------------------------------------------------------------------------------------
+Sum called ... 
+Adding 1 to sum
+Adding 2 to sum
+Adding 3 to sum
+Adding 4 to sum
+Adding 5 to sum
+Adding 6 to sum
+Adding 7 to sum
+Adding 8 to sum
+Adding 9 to sum
+returning from sum
+sumPromise1: Promise { 45 }
+Sum called ... 
+returning from sum
+sumPromise2: Promise { <rejected> 'Cannot sum an empty array' }
+45
+Cannot sum an empty array
+
+Note, how the returned sumPromise1 is in resolved state due to synchronous execution.
+
+To summarise the logs, 
+
+Before Removing setTimeout()
+-------------------------------------------------------------------------------------------------------------
+Returns from sum2DArray immediately
+The sum logic runs asynchronously in the next event loop cycle
+sumPromise1 is logged in pending state
+The rejection for an empty array happens immediately
+Actual summation logic of the first array happens now.
+ 
+After Removing setTimeout()
+---------------------------
+The summation logic runs immediately in the promise constructor, without waiting for the next event loop cycle
+Returns from sum2DArray after summation
+sumPromise1 is already resolved when logged
+The rejected promise is logged immediately
+
+Difference from fetch() API
+----------------------------------------------------------
+Just like the setTimeout example, fetch() API is asynchronous and returns a pending promise to the caller, which allows the caller to continue execution.
+The code inside the fetch() API executes in the next event loop cycle due to it's asynchronous nature.
+When the promise resolves, the .then() block gets executed as a callback.
